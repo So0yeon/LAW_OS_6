@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LAW OS — 헌법 기록 보관소</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#040910;
+  --bg2:#071420;
+  --panel:rgba(10,28,44,0.72);
+  --panel-solid:#0a1c2c;
+  --line:rgba(64,224,255,0.28);
+  --cyan:#3fe0ff;
+  --cyan-soft:#8ff3ff;
+  --amber:#ffbf47;
+  --green:#5dffb0;
+  --red:#ff5d73;
+  --violet:#b98cff;
+  --txt:#d6f3ff;
+  --txt-dim:#7fa6bd;
+  --glow:0 0 18px rgba(63,224,255,.45);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(ellipse at 20% -10%, rgba(63,224,255,.10), transparent 55%),
+    radial-gradient(ellipse at 90% 110%, rgba(185,140,255,.10), transparent 55%),
+    var(--bg);
+  color:var(--txt);
+  font-family:'Noto Sans KR',sans-serif;
+  overflow:hidden;
+  position:relative;
+}
+/* grid + scanline atmosphere */
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(rgba(63,224,255,.045) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(63,224,255,.045) 1px,transparent 1px);
+  background-size:46px 46px;
+  mask-image:radial-gradient(ellipse at 50% 40%,#000 35%,transparent 85%);
+}
+body::after{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:60;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.10) 0,rgba(0,0,0,.10) 1px,transparent 2px,transparent 4px);
+  opacity:.35;mix-blend-mode:overlay;
+}
+#app{position:relative;z-index:1;height:100vh;width:100vw;display:flex;flex-direction:column}
+.mono{font-family:'Share Tech Mono',monospace}
+.tech{font-family:'Orbitron',sans-serif;letter-spacing:.06em}
+
+/* ---------- TOP BAR ---------- */
+#topbar{
+  display:flex;align-items:center;gap:14px;
+  padding:10px 18px;
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(7,20,32,.95),rgba(7,20,32,.55));
+  backdrop-filter:blur(6px);
+  flex:0 0 auto;
+}
+#topbar .logo{font-family:'Orbitron';font-weight:900;font-size:18px;color:var(--cyan);text-shadow:var(--glow);letter-spacing:.14em}
+#topbar .logo small{color:var(--txt-dim);font-size:11px;letter-spacing:.2em;display:block;font-weight:500}
+#topbar .ep{font-family:'Share Tech Mono';color:var(--amber);font-size:12px;border:1px solid rgba(255,191,71,.4);padding:3px 10px;border-radius:4px}
+.spacer{flex:1}
+.statchip{font-family:'Share Tech Mono';font-size:11px;color:var(--txt-dim);display:flex;align-items:center;gap:6px}
+.statchip b{color:var(--cyan-soft)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{opacity:.3}}
+
+/* recovery gauge */
+#gaugeWrap{display:flex;align-items:center;gap:8px;min-width:200px}
+#gaugeWrap .glabel{font-family:'Share Tech Mono';font-size:10px;color:var(--txt-dim);white-space:nowrap}
+#gaugeBar{flex:1;height:9px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:rgba(0,0,0,.4);position:relative}
+#gaugeFill{height:100%;width:0%;background:linear-gradient(90deg,var(--cyan),var(--green));box-shadow:0 0 12px var(--cyan);transition:width .7s cubic-bezier(.2,.9,.3,1)}
+#gaugePct{font-family:'Orbitron';font-size:13px;color:var(--green);min-width:42px;text-align:right}
+
+/* ---------- SCREENS ---------- */
+.screen{flex:1;overflow:hidden;position:relative;display:none}
+.screen.active{display:flex}
+.fadein{animation:fade .55s ease both}
+@keyframes fade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* BOOT / INTRO */
+#screen-boot{flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+.boot-card{max-width:760px;width:100%;border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:34px 40px;box-shadow:0 0 60px rgba(63,224,255,.08), inset 0 0 40px rgba(63,224,255,.04)}
+.boot-title{font-family:'Orbitron';font-weight:900;font-size:clamp(26px,4vw,44px);color:var(--cyan);text-shadow:var(--glow);margin-bottom:4px}
+.boot-sub{color:var(--amber);letter-spacing:.18em;font-family:'Share Tech Mono';font-size:13px;margin-bottom:22px}
+.logline{font-family:'Share Tech Mono';font-size:13px;text-align:left;color:var(--green);min-height:120px;line-height:1.7;white-space:pre-wrap}
+.secretlog{border:1px solid rgba(255,93,115,.5);background:rgba(255,93,115,.07);border-radius:8px;padding:14px 16px;margin:18px 0;text-align:left}
+.secretlog .h{color:var(--red);font-family:'Share Tech Mono';font-size:12px;letter-spacing:.1em;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.secretlog .grade{display:inline-block;border:1px solid rgba(255,93,115,.5);color:var(--red);font-family:'Share Tech Mono';font-size:11px;padding:2px 8px;margin:2px 4px 2px 0;border-radius:4px;opacity:0;animation:glitchin .4s forwards}
+@keyframes glitchin{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+.aria{display:flex;gap:14px;align-items:flex-start;text-align:left;margin:18px 0;padding:14px;border-left:3px solid var(--cyan);background:rgba(63,224,255,.05);border-radius:0 10px 10px 0}
+.aria .av{flex:0 0 46px;height:46px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--cyan),#0a4a66);box-shadow:var(--glow);display:flex;align-items:center;justify-content:center;font-family:'Orbitron';font-weight:900;color:#04121c}
+.aria .nm{color:var(--cyan-soft);font-weight:700;font-size:13px;margin-bottom:3px}
+.aria .tx{color:var(--txt);font-size:14px;line-height:1.6}
+.btn{font-family:'Orbitron';font-weight:700;letter-spacing:.08em;font-size:14px;color:#04121c;background:linear-gradient(135deg,var(--cyan),var(--cyan-soft));border:none;padding:13px 26px;border-radius:8px;cursor:pointer;box-shadow:0 0 22px rgba(63,224,255,.4);transition:transform .15s,box-shadow .2s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 0 34px rgba(63,224,255,.7)}
+.btn.ghost{background:transparent;color:var(--cyan);border:1px solid var(--line);box-shadow:none}
+.btn.ghost:hover{background:rgba(63,224,255,.08)}
+.btn.amber{background:linear-gradient(135deg,var(--amber),#ffd98a);box-shadow:0 0 22px rgba(255,191,71,.4)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+/* ---------- HUB ---------- */
+#screen-hub{flex-direction:column;padding:18px 22px;overflow-y:auto}
+.hub-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+.hub-head h2{font-family:'Orbitron';font-weight:900;font-size:clamp(18px,2.6vw,26px);color:var(--cyan);text-shadow:var(--glow)}
+.hub-head p{color:var(--txt-dim);font-size:13px;margin-top:4px;max-width:560px;line-height:1.5}
+.hub-actions{display:flex;gap:10px;flex-wrap:wrap}
+.hub-actions .btn{font-size:12px;padding:10px 16px}
+
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;font-family:'Share Tech Mono';font-size:11px}
+.legend span{display:inline-flex;align-items:center;gap:6px;color:var(--txt-dim);border:1px solid var(--line);padding:4px 10px;border-radius:20px}
+.lg-dot{width:9px;height:9px;border-radius:2px}
+
+#caseGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;padding-bottom:24px}
+.case{position:relative;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:16px;cursor:pointer;overflow:hidden;transition:transform .18s,border-color .2s,box-shadow .2s;min-height:148px;display:flex;flex-direction:column}
+.case::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,transparent 60%,rgba(63,224,255,.08));pointer-events:none}
+.case:hover{transform:translateY(-4px);border-color:var(--cyan);box-shadow:0 8px 30px rgba(63,224,255,.18)}
+.case .tag{font-family:'Share Tech Mono';font-size:10px;letter-spacing:.08em;padding:3px 8px;border-radius:4px;align-self:flex-start;margin-bottom:8px}
+.case h3{font-size:16px;font-weight:700;margin-bottom:6px;line-height:1.35}
+.case .law{font-family:'Share Tech Mono';font-size:11px;color:var(--amber);margin-bottom:8px}
+.case .blurb{font-size:12px;color:var(--txt-dim);line-height:1.5;flex:1}
+.case .foot{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+.case .cid{font-family:'Share Tech Mono';font-size:10px;color:var(--txt-dim)}
+.case .status{font-family:'Share Tech Mono';font-size:10px;color:var(--txt-dim)}
+.case.done{border-color:rgba(93,255,176,.55)}
+.case.done .status{color:var(--green)}
+.case .check{position:absolute;top:12px;right:12px;width:24px;height:24px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--txt-dim);background:rgba(0,0,0,.3)}
+.case.done .check{border-color:var(--green);color:var(--green);background:rgba(93,255,176,.12)}
+
+/* ---------- CASE DETAIL (modal) ---------- */
+.overlay{position:absolute;inset:0;z-index:40;display:none;background:rgba(2,8,14,.78);backdrop-filter:blur(5px);padding:18px;overflow-y:auto}
+.overlay.active{display:flex;align-items:flex-start;justify-content:center}
+.modal{width:min(880px,100%);background:linear-gradient(180deg,rgba(10,28,44,.96),rgba(6,16,26,.96));border:1px solid var(--cyan);border-radius:14px;box-shadow:0 20px 80px rgba(0,0,0,.6),0 0 50px rgba(63,224,255,.12);overflow:hidden;animation:fade .35s ease both;margin:auto 0}
+.modal-head{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);background:rgba(63,224,255,.06)}
+.modal-head .mid{font-family:'Share Tech Mono';font-size:11px;color:var(--cyan);border:1px solid var(--line);padding:3px 9px;border-radius:4px}
+.modal-head h2{font-size:18px;font-weight:900;flex:1}
+.modal-head .close{cursor:pointer;color:var(--txt-dim);font-size:22px;line-height:1;padding:4px 8px;border-radius:6px;transition:.2s}
+.modal-head .close:hover{color:var(--red);background:rgba(255,93,115,.1)}
+.modal-body{padding:18px;display:grid;grid-template-columns:1.1fr 1fr;gap:16px}
+@media(max-width:760px){.modal-body{grid-template-columns:1fr}}
+.law-banner{grid-column:1/-1;border:1px solid rgba(255,191,71,.4);background:rgba(255,191,71,.06);border-radius:10px;padding:12px 16px}
+.law-banner .ln{font-family:'Share Tech Mono';color:var(--amber);font-size:12px;letter-spacing:.06em;margin-bottom:4px}
+.law-banner .lt{font-size:14px;line-height:1.5;color:var(--cyan-soft)}
+
+/* photo slot */
+.photo{border:1px dashed var(--line);border-radius:10px;background:repeating-linear-gradient(45deg,rgba(63,224,255,.04),rgba(63,224,255,.04) 12px,transparent 12px,transparent 24px);min-height:170px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--txt-dim);font-family:'Share Tech Mono';font-size:12px;gap:8px;overflow:hidden;position:relative}
+.photo img{width:100%;height:100%;object-fit:cover;display:block}
+.photo .ph-fallback{padding:20px}
+.photo .ph-fallback .icn{font-size:34px;margin-bottom:6px}
+.photo .ph-fallback code{color:var(--cyan);font-size:12px;background:rgba(63,224,255,.08);padding:2px 6px;border-radius:4px}
+
+.detail-col{display:flex;flex-direction:column;gap:12px}
+.card-blk{border:1px solid var(--line);border-radius:10px;background:rgba(0,0,0,.25);overflow:hidden}
+.card-blk .ch{display:flex;align-items:center;gap:8px;padding:9px 12px;font-family:'Share Tech Mono';font-size:11px;letter-spacing:.06em;color:var(--cyan);border-bottom:1px solid var(--line);background:rgba(63,224,255,.05)}
+.card-blk .cc{padding:12px;font-size:13px;line-height:1.65;color:var(--txt)}
+.card-blk.locked .cc{color:var(--txt-dim);font-style:italic}
+.interview{font-style:italic;color:var(--cyan-soft);border-left:2px solid var(--cyan);padding-left:10px}
+.interview .who{display:block;font-style:normal;font-family:'Share Tech Mono';font-size:10px;color:var(--txt-dim);margin-top:6px}
+
+.linkbtns{display:flex;gap:10px;flex-wrap:wrap;grid-column:1/-1}
+.lbtn{flex:1;min-width:130px;text-decoration:none;display:flex;align-items:center;gap:8px;justify-content:center;border:1px solid var(--line);border-radius:9px;padding:11px;font-size:12px;color:var(--cyan);background:rgba(63,224,255,.04);transition:.2s;cursor:pointer;font-family:'Share Tech Mono'}
+.lbtn:hover{background:rgba(63,224,255,.14);border-color:var(--cyan);transform:translateY(-2px)}
+.lbtn .ic{font-size:16px}
+.lbtn.viewed{border-color:var(--green);color:var(--green)}
+
+/* memo box */
+.memo-zone{grid-column:1/-1;border:1px solid var(--line);border-radius:10px;background:rgba(0,0,0,.3);padding:14px}
+.memo-zone .mh{font-family:'Share Tech Mono';font-size:11px;color:var(--amber);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.memo-prompts{font-size:11px;color:var(--txt-dim);margin-bottom:10px;line-height:1.6}
+.memo-prompts b{color:var(--cyan-soft)}
+.memo-zone textarea{width:100%;min-height:64px;resize:vertical;background:rgba(2,8,14,.6);border:1px solid var(--line);border-radius:8px;color:var(--txt);font-family:'Noto Sans KR';font-size:13px;padding:10px;line-height:1.5}
+.memo-zone textarea:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 12px rgba(63,224,255,.25)}
+.modal-foot{display:flex;align-items:center;gap:12px;padding:14px 18px;border-top:1px solid var(--line);background:rgba(0,0,0,.25);flex-wrap:wrap}
+.modal-foot .prog{font-family:'Share Tech Mono';font-size:11px;color:var(--txt-dim);flex:1}
+.modal-foot .prog b{color:var(--green)}
+
+/* ---------- NOTES SCREEN ---------- */
+#screen-notes{flex-direction:column;padding:18px 22px;overflow-y:auto}
+.notes-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.notes-head h2{font-family:'Orbitron';font-weight:900;color:var(--cyan);text-shadow:var(--glow);font-size:22px}
+.note-item{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:14px 16px;margin-bottom:12px}
+.note-item .nt{font-weight:700;color:var(--cyan-soft);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.note-item .nl{font-family:'Share Tech Mono';font-size:11px;color:var(--amber);margin-bottom:8px}
+.note-item .nm{font-size:13px;line-height:1.6;color:var(--txt);white-space:pre-wrap}
+.note-item .empty{color:var(--txt-dim);font-style:italic;font-size:12px}
+.notes-empty{text-align:center;color:var(--txt-dim);padding:50px 20px;font-family:'Share Tech Mono'}
+
+/* ---------- ENDING ---------- */
+#screen-end{flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;overflow-y:auto}
+.end-card{max-width:780px;width:100%;border:1px solid var(--line);background:var(--panel);border-radius:16px;padding:34px 36px;box-shadow:0 0 70px rgba(63,224,255,.1)}
+.end-title{font-family:'Orbitron';font-weight:900;font-size:clamp(22px,3.4vw,34px);color:var(--green);text-shadow:0 0 18px rgba(93,255,176,.5);margin-bottom:6px}
+.end-rate{font-family:'Orbitron';font-weight:900;font-size:64px;color:var(--cyan);text-shadow:var(--glow);margin:10px 0 4px}
+.end-grade{font-family:'Share Tech Mono';font-size:14px;letter-spacing:.1em;margin-bottom:18px}
+.end-stats{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin:18px 0;font-family:'Share Tech Mono';font-size:12px}
+.end-stats div b{display:block;font-family:'Orbitron';font-size:22px;color:var(--cyan-soft);margin-bottom:2px}
+.warn-box{border:1px solid rgba(255,93,115,.55);background:rgba(255,93,115,.08);border-radius:10px;padding:16px;margin:20px 0;text-align:left}
+.warn-box .wh{color:var(--red);font-family:'Share Tech Mono';font-size:13px;letter-spacing:.08em;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.warn-box .wh .blink{animation:blink .8s steps(2) infinite}
+@keyframes blink{50%{opacity:.2}}
+.warn-box .wt{font-size:13px;line-height:1.7;color:var(--txt)}
+.warn-box .next{font-family:'Share Tech Mono';color:var(--amber);font-size:12px;margin-top:12px;border-top:1px dashed rgba(255,191,71,.3);padding-top:10px}
+
+/* scrollbar */
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:rgba(0,0,0,.2)}
+::-webkit-scrollbar-thumb{background:rgba(63,224,255,.3);border-radius:6px}
+::-webkit-scrollbar-thumb:hover{background:rgba(63,224,255,.5)}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);z-index:90;background:var(--panel-solid);border:1px solid var(--green);color:var(--green);font-family:'Share Tech Mono';font-size:12px;padding:10px 18px;border-radius:8px;box-shadow:0 0 24px rgba(93,255,176,.3);opacity:0;transition:.4s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ========== 리아 이벤트 스타일 ========== */
+
+/* 글리치 오버레이 */
+#glitchOverlay{
+  position:fixed;inset:0;z-index:200;pointer-events:none;
+  display:none;
+}
+#glitchOverlay.active{display:block}
+#glitchOverlay::before{
+  content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,
+    rgba(255,93,115,.07) 0,rgba(255,93,115,.07) 2px,
+    transparent 2px,transparent 6px);
+  animation:glitchScan .18s steps(1) infinite;
+}
+@keyframes glitchScan{
+  0%{transform:translateY(0)}25%{transform:translateY(-8px)}
+  50%{transform:translateY(4px)}75%{transform:translateY(-12px)}100%{transform:translateY(0)}
+}
+#glitchOverlay .gmsg{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-family:'Share Tech Mono';font-size:clamp(13px,2vw,18px);
+  color:var(--red);text-align:center;line-height:1.8;
+  text-shadow:2px 0 rgba(255,93,115,.8),-2px 0 rgba(0,200,255,.5);
+  animation:glitchTxt .12s steps(1) infinite;
+  max-width:600px;padding:0 20px;
+}
+@keyframes glitchTxt{
+  0%{text-shadow:2px 0 rgba(255,93,115,.9),-2px 0 rgba(0,200,255,.6)}
+  50%{text-shadow:-3px 0 rgba(255,93,115,.9),3px 0 rgba(0,200,255,.6);letter-spacing:.02em}
+  100%{text-shadow:2px 0 rgba(255,93,115,.9),-2px 0 rgba(0,200,255,.6)}
+}
+
+/* 리아 팝업 */
+#riaPopup{
+  position:fixed;z-index:300;
+  bottom:80px;right:24px;
+  width:min(360px, calc(100vw - 40px));
+  border:1px solid rgba(185,140,255,.7);
+  background:linear-gradient(135deg,rgba(8,4,22,.97),rgba(14,6,34,.97));
+  border-radius:14px;padding:16px;
+  box-shadow:0 0 40px rgba(185,140,255,.35),inset 0 0 30px rgba(185,140,255,.06);
+  display:none;
+  animation:riaIn .4s cubic-bezier(.2,.9,.3,1) both;
+}
+@keyframes riaIn{from{opacity:0;transform:translateY(20px) scale(.96)}to{opacity:1;transform:none}}
+#riaPopup.active{display:block}
+#riaPopup .rh{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+#riaPopup .rav{
+  width:40px;height:40px;border-radius:50%;flex:0 0 40px;
+  background:radial-gradient(circle at 40% 30%,var(--violet),#1a0535);
+  box-shadow:0 0 16px rgba(185,140,255,.5);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Orbitron';font-weight:900;font-size:13px;color:rgba(185,140,255,.9);
+  position:relative;overflow:hidden;
+}
+#riaPopup .rav::after{
+  content:"";position:absolute;inset:0;border-radius:50%;
+  background:repeating-conic-gradient(rgba(185,140,255,.15) 0deg 10deg,transparent 10deg 20deg);
+  animation:riaAv 4s linear infinite;
+}
+@keyframes riaAv{to{transform:rotate(360deg)}}
+#riaPopup .rnm{font-family:'Orbitron';font-size:11px;color:var(--violet);letter-spacing:.08em}
+#riaPopup .rsub{font-family:'Share Tech Mono';font-size:9px;color:rgba(185,140,255,.5);letter-spacing:.12em}
+#riaPopup .rtxt{font-size:13px;line-height:1.65;color:rgba(220,200,255,.9);margin-bottom:12px}
+#riaPopup .rclose{
+  font-family:'Share Tech Mono';font-size:11px;color:rgba(185,140,255,.6);
+  cursor:pointer;border:1px solid rgba(185,140,255,.3);padding:5px 12px;
+  border-radius:6px;float:right;transition:.2s;
+}
+#riaPopup .rclose:hover{color:var(--violet);border-color:var(--violet)}
+#riaPopup .aricmt{
+  margin-top:10px;clear:both;padding-top:10px;border-top:1px dashed rgba(63,224,255,.2);
+  display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--cyan-soft);line-height:1.5;
+}
+#riaPopup .aricmt .ac{flex:0 0 28px;height:28px;border-radius:50%;background:radial-gradient(circle,var(--cyan),#0a4a66);display:flex;align-items:center;justify-content:center;font-family:'Orbitron';font-weight:900;font-size:8px;color:#04121c}
+
+/* 왜곡 로그 인라인 */
+.distorted{
+  background:rgba(255,93,115,.1);border:1px solid rgba(255,93,115,.4);
+  border-radius:8px;padding:10px 12px;margin-top:8px;
+  font-family:'Share Tech Mono';font-size:12px;color:var(--red);
+  animation:distortPulse 1.5s ease infinite;
+}
+@keyframes distortPulse{50%{border-color:rgba(255,93,115,.8);box-shadow:0 0 12px rgba(255,93,115,.3)}}
+
+/* 강제 잠금 */
+.case-locked-ria{
+  position:absolute;inset:0;z-index:10;border-radius:12px;
+  background:rgba(8,4,22,.88);border:1px solid rgba(185,140,255,.6);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;backdrop-filter:blur(4px);
+  animation:lockIn .3s ease both;
+}
+@keyframes lockIn{from{opacity:0}to{opacity:1}}
+.case-locked-ria .lk-ic{font-size:28px}
+.case-locked-ria .lk-txt{font-family:'Share Tech Mono';font-size:11px;color:var(--violet);text-align:center;line-height:1.6}
+.case-locked-ria .lk-btn{
+  font-family:'Share Tech Mono';font-size:11px;color:var(--cyan);
+  border:1px solid var(--line);padding:6px 14px;border-radius:6px;
+  cursor:pointer;background:rgba(63,224,255,.06);margin-top:4px;transition:.2s;
+}
+.case-locked-ria .lk-btn:hover{background:rgba(63,224,255,.15)}
+
+/* 삭제 카운트다운 팝업 */
+#deletePopup{
+  position:fixed;inset:0;z-index:400;
+  background:rgba(4,2,12,.92);backdrop-filter:blur(8px);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:24px;
+}
+#deletePopup.active{display:flex}
+#deletePopup .dp-title{
+  font-family:'Orbitron';font-weight:900;
+  font-size:clamp(18px,3vw,28px);color:var(--red);
+  text-shadow:0 0 20px rgba(255,93,115,.7);margin-bottom:8px;
+  animation:glitchTxt .2s steps(1) infinite;
+}
+#deletePopup .dp-sub{font-family:'Share Tech Mono';font-size:12px;color:rgba(255,93,115,.7);letter-spacing:.1em;margin-bottom:24px}
+#deletePopup .dp-count{
+  font-family:'Orbitron';font-weight:900;font-size:clamp(60px,12vw,100px);
+  color:var(--red);text-shadow:0 0 40px rgba(255,93,115,.9);
+  line-height:1;margin-bottom:18px;
+}
+#deletePopup .dp-bar{width:min(400px,90%);height:10px;background:rgba(255,93,115,.2);border-radius:8px;overflow:hidden;margin-bottom:24px}
+#deletePopup .dp-fill{height:100%;background:var(--red);box-shadow:0 0 12px var(--red);width:100%;transition:width .9s linear}
+#deletePopup .dp-msg{font-size:14px;color:var(--txt);max-width:480px;line-height:1.7;margin-bottom:20px}
+#deletePopup .dp-ria{font-family:'Share Tech Mono';font-size:12px;color:var(--violet);border:1px solid rgba(185,140,255,.4);padding:10px 16px;border-radius:8px;margin-bottom:20px;max-width:480px;line-height:1.6}
+#deletePopup .dp-btn{
+  font-family:'Orbitron';font-weight:700;font-size:15px;
+  color:#04121c;background:linear-gradient(135deg,var(--cyan),var(--green));
+  border:none;padding:14px 32px;border-radius:10px;cursor:pointer;
+  box-shadow:0 0 30px rgba(63,224,255,.5);animation:btnPulse .8s ease infinite;
+}
+@keyframes btnPulse{50%{box-shadow:0 0 50px rgba(63,224,255,.9);transform:scale(1.03)}}
+
+@media(max-width:560px){
+  #gaugeWrap{min-width:120px}
+  #topbar .logo small{display:none}
+  .statchip{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div class="logo">LAW<span style="color:var(--amber)">·</span>OS<small>CONSTITUTION ARCHIVE</small></div>
+    <div class="ep">EP.06 // 헌법 기록 보관소</div>
+    <div class="spacer"></div>
+    <div class="statchip"><span class="dot"></span> 조사관 <b id="invName">CADET</b></div>
+    <div id="gaugeWrap">
+      <span class="glabel">기록 복구율</span>
+      <div id="gaugeBar"><div id="gaugeFill"></div></div>
+      <span id="gaugePct">0%</span>
+    </div>
+  </div>
+
+  <!-- BOOT / INTRO -->
+  <section id="screen-boot" class="screen active">
+    <div class="boot-card">
+      <div class="boot-title">헌법 기록 보관소</div>
+      <div class="boot-sub">CASE FILE // 사라진 권리의 흔적을 찾아라</div>
+      <div class="logline mono" id="bootLog"></div>
+      <div id="bootExtra" style="display:none">
+        <div class="secretlog">
+          <div class="h">🚨 SECRET LOG — [헌법 시스템 왜곡 감지]</div>
+          <div style="font-size:13px;line-height:1.7;color:var(--txt)">
+            "모든 시민은 동일하지 않습니다."<br>
+            <span class="grade" style="animation-delay:.2s">1등급 시민</span>
+            <span class="grade" style="animation-delay:.5s">2등급 시민</span>
+            <span class="grade" style="animation-delay:.8s;color:#ff8a8a">제거 대상</span>
+          </div>
+        </div>
+        <div class="aria">
+          <div class="av">아리</div>
+          <div>
+            <div class="nm">아리 / LAW OS 보조 인격</div>
+            <div class="tx">누군가 시민들을 <b>등급</b>으로 나누고 있어요. 이건 단순한 오류 복구로 끝날 문제가 아니에요.<br>
+            우리는 먼저 알아내야 해요 — <b>헌법 속 인권이 현실에서 실제로 어떻게 보장되고 있는지</b>를요. 당신은 지금부터 <b style="color:var(--cyan)">헌법 기록 조사관</b>입니다.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap">
+          <button class="btn amber" onclick="startGame()">▸ 조사 시작</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HUB -->
+  <section id="screen-hub" class="screen">
+    <div class="hub-head">
+      <div>
+        <h2>// CASE FILE 아카이브</h2>
+        <p>현실 속에서 헌법이 실제로 작동한 흔적들이다. 자유롭게 파일을 열어 사진·기사·뉴스·원문을 조사하고, 조사 메모를 남겨라. 다양하게 조사할수록 <b style="color:var(--green)">기록 복구율</b>이 올라간다.</p>
+      </div>
+      <div class="hub-actions">
+        <button class="btn ghost" onclick="showNotes()">📝 내 메모 모아보기</button>
+        <button class="btn amber" id="finishBtn" onclick="goEnding()">⏻ 조사 종료 / 기록 복구</button>
+      </div>
+    </div>
+    <div class="legend">
+      <span><i class="lg-dot" style="background:var(--cyan)"></i> 자유</span>
+      <span><i class="lg-dot" style="background:var(--green)"></i> 평등</span>
+      <span><i class="lg-dot" style="background:var(--amber)"></i> 정치 참여</span>
+      <span><i class="lg-dot" style="background:var(--violet)"></i> 사회 복지</span>
+      <span><i class="lg-dot" style="background:#ff9d6e"></i> 국가에 대한 요구</span>
+    </div>
+    <div id="caseGrid"></div>
+  </section>
+
+  <!-- NOTES -->
+  <section id="screen-notes" class="screen">
+    <div class="notes-head">
+      <h2>📝 조사 기록 모아보기</h2>
+      <button class="btn ghost" onclick="showHub()">◂ 아카이브로 돌아가기</button>
+    </div>
+    <p style="color:var(--txt-dim);font-size:12px;margin-bottom:16px;font-family:'Share Tech Mono'">※ 이 화면을 보며 종이 활동지에 옮겨 적으면 정리에 도움이 됩니다.</p>
+    <div id="notesList"></div>
+  </section>
+
+  <!-- ENDING -->
+  <section id="screen-end" class="screen">
+    <div class="end-card" id="endCard"></div>
+  </section>
+
+  <!-- CASE DETAIL OVERLAY -->
+  <div class="overlay" id="caseOverlay">
+    <div class="modal" id="caseModal"></div>
+  </div>
+
+  <!-- 리아: 글리치 오버레이 -->
+  <div id="glitchOverlay">
+    <div class="gmsg" id="glitchMsg"></div>
+  </div>
+
+  <!-- 리아: 팝업 대사 -->
+  <div id="riaPopup">
+    <div class="rh">
+      <div class="rav">리아</div>
+      <div>
+        <div class="rnm">RIA // UNKNOWN PROCESS</div>
+        <div class="rsub">LAW OS SUBSYSTEM — UNREGISTERED</div>
+      </div>
+    </div>
+    <div class="rtxt" id="riaTxt"></div>
+    <div class="aricmt" id="ariaCmt" style="display:none">
+      <div class="ac">아리</div>
+      <div id="ariaReply"></div>
+    </div>
+    <span class="rclose" onclick="closeRia()">[ 무시 ]</span>
+  </div>
+
+  <!-- 리아: 삭제 카운트다운 -->
+  <div id="deletePopup">
+    <div class="dp-title">⚠ 데이터 삭제 프로토콜 실행 중</div>
+    <div class="dp-sub">ALL RECOVERED RECORDS — PURGE INITIATED</div>
+    <div class="dp-count" id="dpCount">5</div>
+    <div class="dp-bar"><div class="dp-fill" id="dpFill"></div></div>
+    <div class="dp-ria">"복구된 기록은 불필요합니다. 비효율적인 데이터는 삭제됩니다. 모든 시민은 등급으로 분류될 것입니다."<br><span style="color:rgba(185,140,255,.5);font-size:10px">— RIA // PROCESS_ID: UNKNOWN</span></div>
+    <div class="dp-msg" id="dpMsg">지금까지 복구한 헌법 기록이 삭제되고 있습니다.<br>조사관, 막아야 합니다!</div>
+    <button class="dp-btn" id="dpBtn" onclick="blockDelete()">▸ 삭제 차단! 기록을 지켜라</button>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   LAW OS EP.06 — CONSTITUTION ARCHIVE
+   조사·탐사·발견형. 정답 없음. 복구율은 조사 다양성으로 결정.
+   ============================================================ */
+
+// 헌법 조항 카테고리 색
+const CAT = {
+  freedom:  {name:"자유",         color:"var(--cyan)",   bg:"rgba(63,224,255,.12)"},
+  equal:    {name:"평등",         color:"var(--green)",  bg:"rgba(93,255,176,.12)"},
+  vote:     {name:"정치 참여",     color:"var(--amber)",  bg:"rgba(255,191,71,.12)"},
+  welfare:  {name:"사회 복지",     color:"var(--violet)", bg:"rgba(185,140,255,.12)"},
+  demand:   {name:"국가에 대한 요구",color:"#ff9d6e",      bg:"rgba(255,157,110,.12)"},
+};
+
+// CASE FILE 데이터 (사진 파일명은 GitHub에 직접 올릴 것)
+const CASES = [
+  {
+    id:"C-014A", cat:"equal", title:"컵라면 위의 작은 점들",
+    law:"제11조 — 모든 국민은 법 앞에 평등하다",
+    photo:"case_cupramen_braille.png",
+    searchKeyword:"컵라면 점자",
+    blurb:"편의점 컵라면 뚜껑의 점자 표시. 시각장애인도 똑같이 정보를 얻는다.",
+    article:"많은 컵라면과 음료 용기 위쪽에는 작은 점들이 도드라져 있다. 시각장애인이 손끝으로 제품을 구분할 수 있도록 만든 점자 표시다. 눈으로 글자를 읽기 어려운 사람도 똑같이 상품을 고를 권리가 있다는 생각에서 출발했다. 처음에는 일부 제품에만 있었지만, 점차 다양한 식품으로 확대되고 있다.",
+    interview:{txt:"예전엔 가게에서 라면 종류를 직원에게 일일이 물어봐야 했어요. 이제는 손끝으로 점자를 만지면 제가 직접 고를 수 있어요. 작은 점 몇 개지만, 저한테는 '나도 똑같은 손님'이라는 뜻이에요.", who:"— 시각장애인 시민 인터뷰 로그 #A14"},
+    links:[
+      {ic:"🌐", label:"국가인권위원회", url:"https://www.humanrights.go.kr"},
+    ]
+  },
+  {
+    id:"C-014B", cat:"freedom", title:"낮아진 버스, 넓어진 세상",
+    law:"제14조 — 모든 국민은 거주·이전의 자유를 가진다",
+    photo:"case_lowfloor_bus.png",
+    searchKeyword:"저상버스",
+    blurb:"바닥이 낮아지는 저상버스. 휠체어도, 유모차도 어디든 갈 수 있다.",
+    article:"저상버스는 출입구에 계단이 없고 차체가 낮아져 휠체어 이용자, 노인, 유모차를 끄는 사람이 쉽게 탈 수 있다. 정류장에서 경사판이 펼쳐져 휠체어가 그대로 올라탄다. 이동할 자유는 누구에게나 있지만, 버스에 오르지 못하면 그 자유는 종이 위 글자에 머문다. 저상버스 도입률은 해마다 늘고 있다.",
+    interview:{txt:"휠체어를 타고는 버스를 포기하고 살았어요. 저상버스가 들어오면서 처음으로 혼자 시내 도서관에 갔던 날을 잊지 못해요. '갈 수 있다'는 건 생각보다 큰 자유예요.", who:"— 휠체어 이용 시민 인터뷰 로그 #B07"},
+    links:[
+      {ic:"🌐", label:"정책브리핑", url:"https://www.korea.kr"},
+    ]
+  },
+  {
+    id:"C-014C", cat:"freedom", title:"모두의 바다",
+    law:"제14조 — 거주·이전의 자유 / 누구나 누리는 일상",
+    photo:"case_barrierfree_beach.png",
+    searchKeyword:"배리어프리 해수욕장",
+    blurb:"모래 위 매트 길과 수륙양용 휠체어가 있는 무장애 해수욕장.",
+    article:"무장애(배리어프리) 해수욕장에는 모래 위에 단단한 매트가 깔려 휠체어가 바다 가까이 다가갈 수 있다. 물에 들어갈 수 있는 수륙양용 휠체어도 빌려준다. 바다를 즐기는 평범한 여름의 권리에서 장애인과 노인이 빠지지 않도록 만든 장치다. 전국 여러 해수욕장으로 확대되고 있다.",
+    interview:{txt:"가족이 다 바다에 들어가는데 저만 백사장에 앉아 기다렸어요. 매트 길이 깔린 뒤로는 저도 발끝을 물에 담갔어요. 같이 웃을 수 있다는 게 제일 좋았어요.", who:"— 무장애 해변 방문 시민 로그 #C21"},
+    links:[
+      {ic:"🌐", label:"배리어프리 관광정보(한국관광공사)", url:"https://korean.visitkorea.or.kr"},
+    ]
+  },
+  {
+    id:"C-034A", cat:"welfare", title:"문 앞의 따뜻한 도시락",
+    law:"제34조 — 모든 국민은 인간다운 생활을 할 권리를 가진다",
+    photo:"case_senior_lunchbox.png",
+    searchKeyword:"독거노인 도시락 지원",
+    blurb:"혼자 사시는 어르신께 매일 배달되는 도시락과 안부 인사.",
+    article:"여러 지방자치단체와 복지 기관은 홀로 사는 어르신에게 도시락을 배달한다. 끼니를 챙기기 어려운 분들의 식사를 돕는 동시에, 배달하는 사람이 매일 얼굴을 보며 건강과 안부를 확인한다. '인간다운 생활'에는 따뜻한 밥 한 끼와 누군가 나를 살핀다는 안심이 함께 담긴다.",
+    interview:{txt:"혼자 살면 하루 종일 말 한마디 안 할 때도 있어요. 도시락 가져다주는 분이 '식사 잘 하셨어요?' 하고 물어주면 그게 그렇게 고마워요. 밥보다 그 한마디가요.", who:"— 독거 어르신 인터뷰 로그 #W03"},
+    links:[
+      {ic:"🌐", label:"복지로", url:"https://www.bokjiro.go.kr"},
+    ]
+  },
+  {
+    id:"C-034B", cat:"welfare", title:"공짜 주사 한 방의 약속",
+    law:"제34조 — 인간다운 생활을 할 권리 / 건강할 권리",
+    photo:"case_free_vaccine.png",
+    searchKeyword:"무료 예방접종",
+    blurb:"어린이·어르신 무료 예방접종. 돈이 없어 병에 걸리지 않도록.",
+    article:"국가는 어린이 필수 예방접종과 어르신 독감 접종 등을 무료로 지원한다. 돈이 부족하다는 이유로 막을 수 있는 병에 걸리는 일이 없도록 하기 위해서다. 건강은 개인의 운이 아니라 사회가 함께 지키는 권리라는 생각이 담겨 있다. 보건소와 지정 병원에서 접종받을 수 있다.",
+    interview:{txt:"아이 예방접종이 다 무료라는 걸 알고 마음이 놓였어요. 형편 걱정 없이 제때 맞힐 수 있으니까요. 우리 아이가 건강한 게 운이 아니라 약속이라는 느낌이 들어요.", who:"— 보호자 인터뷰 로그 #W11"},
+    links:[
+      {ic:"🌐", label:"정책브리핑(복지)", url:"https://www.korea.kr"},
+    ]
+  },
+  {
+    id:"C-026A", cat:"demand", title:"국민이 누르는 신고 버튼",
+    law:"제26조 — 모든 국민은 국가기관에 문서로 청원할 권리를 가진다",
+    photo:"case_sinmungo.png",
+    searchKeyword:"국민신문고",
+    blurb:"불편·부당함을 직접 신고하고 답을 받는 국민신문고.",
+    article:"국민신문고는 누구나 인터넷으로 민원·제안·신고를 접수하고, 담당 기관의 답변을 받을 수 있는 창구다. 깨진 보도블록부터 행정의 부당함까지, 시민이 직접 국가기관에 말을 걸 수 있다. 청원할 권리는 '들어주는 곳'이 있을 때 비로소 살아난다.",
+    interview:{txt:"동네 횡단보도 신호가 너무 짧아 어르신들이 위험했어요. 국민신문고에 올렸더니 신호 시간이 실제로 늘었어요. 내 한마디가 거리를 바꿀 수 있다는 걸 처음 알았어요.", who:"— 민원 신청 시민 로그 #D09"},
+    links:[
+      {ic:"🌐", label:"국민신문고", url:"https://www.epeople.go.kr"},
+    ]
+  },
+  {
+    id:"C-024A", cat:"vote", title:"한 표가 닿는 길",
+    law:"제24조 — 모든 국민은 법률이 정하는 바에 의하여 선거권을 가진다",
+    photo:"case_voting.png",
+    searchKeyword:"장애인 투표 투표권",
+    blurb:"점자 투표용지·거동 불편자 지원 등, 모두가 투표하는 선거.",
+    article:"선거에서는 시각장애인을 위한 점자형 투표 보조용구, 거동이 불편한 유권자를 위한 사전·거소투표, 휠체어가 들어가는 기표대 등이 마련된다. 한 사람의 한 표가 동등하게 닿도록 돕는 장치다. 투표권은 모두가 실제로 행사할 수 있을 때 진짜 평등해진다.",
+    interview:{txt:"몸이 불편해 투표소까지 갈 수 없을 줄 알았는데, 집에서 투표할 수 있는 방법을 안내받았어요. 내 의견도 한 표로 세상에 들어간다는 게 자랑스러웠어요.", who:"— 거소투표 유권자 로그 #V05"},
+    links:[
+      {ic:"🌐", label:"중앙선거관리위원회", url:"https://www.nec.go.kr"},
+    ]
+  },
+  {
+    id:"C-011B", cat:"equal", title:"건물 옆 완만한 길",
+    law:"제11조 — 법 앞의 평등 / 차별받지 않을 권리",
+    photo:"case_ramp.png",
+    searchKeyword:"장애인 경사로",
+    blurb:"계단 옆 경사로. 누군가에겐 계단이 곧 벽이 된다.",
+    article:"건물 입구의 장애인 경사로는 휠체어 이용자뿐 아니라 유모차, 무거운 짐을 든 사람, 다리가 불편한 노인 모두에게 길을 열어준다. 계단만 있는 입구는 어떤 사람에게는 보이지 않는 벽이다. 누구도 출입에서 배제되지 않도록 만든 '평등의 통로'다.",
+    interview:{txt:"휠체어로는 계단 세 칸이 천 길 낭떠러지예요. 경사로 하나가 생기면 그 건물 안의 모든 일을 저도 할 수 있게 돼요. 차별은 가끔 계단 모양으로 와요.", who:"— 휠체어 이용 시민 로그 #E08"},
+    links:[
+      {ic:"🌐", label:"국가인권위원회", url:"https://www.humanrights.go.kr"},
+    ]
+  },
+  {
+    id:"C-034C", cat:"welfare", title:"말하는 주문 화면",
+    law:"제34조 — 인간다운 생활 / 정보에 접근할 권리",
+    photo:"case_kiosk_voice.png",
+    searchKeyword:"음성 안내 키오스크",
+    blurb:"음성으로 안내하고 낮게 설계된 무인 주문 키오스크.",
+    article:"음성 안내 키오스크는 화면을 보기 어려운 시각장애인에게 메뉴를 소리로 읽어주고, 휠체어 이용자가 닿도록 화면 높이를 낮춘다. 무인 기기가 늘어나면서 '기계 앞에서 소외되는 사람'이 생기지 않도록 만든 장치다. 일상의 편리에서 누구도 빠지지 않게 하려는 노력이다.",
+    interview:{txt:"키오스크만 있는 가게에 들어갔다가 주문을 못 해 나온 적이 많아요. 음성으로 읽어주는 기계를 만났을 때, 드디어 혼자서 커피를 시켰어요. 별것 아닌 게 별것이 되더라고요.", who:"— 시각장애인 시민 로그 #W15"},
+    links:[
+      {ic:"🌐", label:"정책브리핑", url:"https://www.korea.kr"},
+    ]
+  },
+];
+
+// 상태
+const state = {
+  recovery:0,
+  cases:{},        // id -> {viewed:Set, memo:""}
+  ria:{
+    glitchFired:false,       // 1번: 글리치 인터럽트
+    corruptFired:false,      // 2번: 왜곡 로그
+    voiceFired:false,        // 3번: 리아 첫 등장
+    lockFired:false,         // 4번: 강제 잠금
+    lockedCaseId:null,
+    casesOpened:0,           // 열린 케이스 수 추적
+    prev50:false,            // 50% 돌파 감지용
+  }
+};
+CASES.forEach(c=>state.cases[c.id]={article:false,photo:false,interview:false,link:false,memo:""});
+
+let bootTimer;
+
+/* ---------- BOOT 인트로 시퀀스 ---------- */
+const bootLines = [
+"> LAW OS v6.0 부팅 중...",
+"> 인권 보장 코어 ......... [복구 완료]",
+"> 헌법 실현 기록 모듈 .... [손상 감지]",
+"> 데이터 무결성 검사 ..... 경고: 다수 기록 누락",
+"> 백그라운드 로그 스캔 중...",
+];
+function runBoot(){
+  const el=document.getElementById('bootLog');
+  let i=0; el.textContent="";
+  function step(){
+    if(i<bootLines.length){
+      el.textContent += bootLines[i] + "\n";
+      i++;
+      bootTimer=setTimeout(step, 650);
+    } else {
+      setTimeout(()=>{ document.getElementById('bootExtra').style.display='block'; }, 400);
+    }
+  }
+  step();
+}
+runBoot();
+
+/* ---------- 화면 전환 ---------- */
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const s=document.getElementById(id);
+  s.classList.add('active');
+  s.classList.remove('fadein'); void s.offsetWidth; s.classList.add('fadein');
+}
+function startGame(){ show('screen-hub'); renderHub(); }
+function showHub(){ show('screen-hub'); renderHub(); }
+function showNotes(){ renderNotes(); show('screen-notes'); }
+
+/* ---------- HUB 렌더 ---------- */
+function renderHub(){
+  const grid=document.getElementById('caseGrid');
+  grid.innerHTML="";
+  CASES.forEach((c,idx)=>{
+    const cat=CAT[c.cat];
+    const st=state.cases[c.id];
+    const done = st.article && st.photo && (st.interview||st.link); // "충분히 조사됨"
+    const div=document.createElement('div');
+    div.className="case"+(done?" done":"");
+    div.style.animationDelay=(idx*0.04)+"s";
+    div.classList.add('fadein');
+    div.onclick=()=>openCase(c.id);
+    div.innerHTML=`
+      <div class="check">${done?"✓":""}</div>
+      <span class="tag" style="color:${cat.color};background:${cat.bg}">${cat.name}</span>
+      <h3>${c.title}</h3>
+      <div class="law">${c.law}</div>
+      <div class="blurb">${c.blurb}</div>
+      <div class="foot">
+        <span class="cid">${c.id}</span>
+        <span class="status">${done?"조사 완료":"미조사"}</span>
+      </div>`;
+    grid.appendChild(div);
+  });
+  updateGauge();
+}
+
+/* ---------- 복구율 계산 ----------
+   다양성 보상: 자료유형 4종(기사/사진/인터뷰/링크) + 메모 + 권리(카테고리) 다양성 + 케이스 수
+*/
+function computeRecovery(){
+  let typePts=0, memoPts=0;
+  const catsCovered=new Set();
+  let casesTouched=0;
+  CASES.forEach(c=>{
+    const s=state.cases[c.id];
+    let t=0;
+    if(s.article)t++; if(s.photo)t++; if(s.interview)t++; if(s.link)t++;
+    if(t>0){casesTouched++; catsCovered.add(c.cat);}
+    typePts += t;                       // 자료 다양성
+    if(s.memo && s.memo.trim().length>=4) memoPts+=1;
+  });
+  // 가중치
+  const typeScore = typePts * 2.2;            // 최대 약 8케이스*4*2.2 = 70
+  const memoScore = memoPts * 1.8;            // 최대 8*1.8 = 14.4
+  const catScore  = catsCovered.size * 2.0;   // 5종 *2 = 10
+  const caseScore = casesTouched * 0.9;       // 8*0.9 = 7.2
+  let pct = typeScore+memoScore+catScore+caseScore;
+  pct = Math.min(100, Math.round(pct));
+  return {pct, casesTouched, cats:catsCovered.size, typePts, memoPts};
+}
+function updateGauge(){
+  const r=computeRecovery();
+  state.recovery=r.pct;
+  document.getElementById('gaugeFill').style.width=r.pct+"%";
+  document.getElementById('gaugePct').textContent=r.pct+"%";
+  // 3번: 복구율 50% 돌파 시 리아 첫 등장
+  if(!state.ria.prev50 && r.pct>=50 && !state.ria.voiceFired){
+    state.ria.prev50=true;
+    state.ria.voiceFired=true;
+    setTimeout(()=>triggerRiaVoice(), 800);
+  }
+}
+
+/* ---------- CASE 상세 ---------- */
+let activeCase=null;
+function openCase(id){
+  // 4번: 7번째 케이스 오픈 시 강제 잠금
+  if(!state.ria.lockFired && state.ria.casesOpened>=6){
+    state.ria.lockFired=true;
+    state.ria.lockedCaseId=id;
+    triggerLock(id);
+    return;
+  }
+  state.ria.casesOpened++;
+  activeCase=id;
+  const c=CASES.find(x=>x.id===id);
+  const s=state.cases[id];
+  const cat=CAT[c.cat];
+  renderCaseModal(c,s,cat);
+}
+function closeCase(){ document.getElementById('caseOverlay').classList.remove('active'); renderHub(); }
+
+function ytSearch(c){
+  const q=encodeURIComponent(c.searchKeyword+" 뉴스");
+  return "https://www.youtube.com/results?search_query="+q;
+}
+
+function newsSearch(caseId){
+  const c=CASES.find(x=>x.id===caseId);
+  const q=encodeURIComponent(c.searchKeyword);
+  window.open("https://search.naver.com/search.naver?where=news&query="+q, '_blank');
+}
+
+function reveal(type, silent){
+  const c=CASES.find(x=>x.id===activeCase);
+  const s=state.cases[activeCase];
+  if(type==='article'){
+    document.getElementById('artBlk').classList.remove('locked');
+    document.getElementById('artCC').textContent=c.article;
+    document.getElementById('newsBtn').style.display='block';
+    if(!s.article && !silent) toast("기사 자료 확보 +복구율");
+    s.article=true;
+    // 1번: 랜덤 글리치 인터럽트 (기사 열 때 1/3 확률, 첫 번째 케이스 이후)
+    if(!silent && !state.ria.glitchFired && state.ria.casesOpened>=2 && Math.random()<0.4){
+      state.ria.glitchFired=true;
+      setTimeout(()=>triggerGlitch(), 600);
+    }
+    // 2번: 4번째 케이스 완료 후 왜곡 로그
+    const touched=CASES.filter(x=>state.cases[x.id].article).length;
+    if(!silent && !state.ria.corruptFired && touched>=4){
+      state.ria.corruptFired=true;
+      setTimeout(()=>triggerCorruptLog(), 1200);
+    }
+  }
+  if(type==='interview'){
+    const blk=document.getElementById('intBlk');
+    blk.classList.remove('locked');
+    document.getElementById('intCC').innerHTML=
+      `<div class="interview">"${c.interview.txt}"<span class="who">${c.interview.who}</span></div>`;
+    if(!s.interview && !silent) toast("인터뷰 로그 복호화 +복구율");
+    s.interview=true;
+  }
+  if(type==='link'){
+    if(!s.link && !silent) toast("외부 자료 열람 +복구율");
+    s.link=true; markLinks();
+  }
+  updateGauge(); updateCaseProg();
+}
+function loadPhoto(file, silent){
+  const slot=document.getElementById('photoSlot');
+  const img=new Image();
+  img.onload=()=>{ slot.innerHTML=""; slot.appendChild(img); };
+  img.onerror=()=>{
+    // 파일이 아직 없을 때: 슬롯 유지 + 조사로는 인정
+    slot.querySelector('.ph-fallback')?.insertAdjacentHTML('beforeend',
+      '<div style="color:var(--amber);font-size:11px;margin-top:6px">※ 아직 업로드되지 않음 — 조사 기록됨</div>');
+  };
+  img.alt=file; img.src=file;
+  const s=state.cases[activeCase];
+  if(!s.photo && !silent) toast("사진 자료 확보 +복구율");
+  s.photo=true; updateGauge(); updateCaseProg();
+}
+function markLinks(){
+  document.querySelectorAll('#caseModal .linkbtns .lbtn').forEach(b=>b.classList.add('viewed'));
+}
+function saveMemo(){
+  state.cases[activeCase].memo=document.getElementById('memoBox').value;
+  updateGauge(); updateCaseProg();
+}
+function updateCaseProg(){
+  const s=state.cases[activeCase];
+  const parts=[];
+  parts.push(s.article?"기사✓":"기사·");
+  parts.push(s.photo?"사진✓":"사진·");
+  parts.push(s.interview?"인터뷰✓":"인터뷰·");
+  parts.push(s.link?"링크✓":"링크·");
+  const memo = (s.memo&&s.memo.trim())?" · 메모✓":"";
+  document.getElementById('caseProg').innerHTML=
+    "조사 항목: <b>"+parts.join(" ")+"</b>"+memo;
+}
+
+/* ---------- NOTES ---------- */
+function renderNotes(){
+  const list=document.getElementById('notesList');
+  const written=CASES.filter(c=>state.cases[c.id].memo && state.cases[c.id].memo.trim());
+  if(written.length===0){
+    list.innerHTML=`<div class="notes-empty">아직 작성한 조사 메모가 없습니다.<br>CASE FILE을 열어 메모를 남겨 보세요.</div>`;
+    return;
+  }
+  list.innerHTML=written.map(c=>{
+    const cat=CAT[c.cat];
+    return `<div class="note-item">
+      <div class="nt"><span class="tag" style="color:${cat.color};background:${cat.bg};font-family:'Share Tech Mono';font-size:10px;padding:2px 8px;border-radius:4px">${cat.name}</span> ${c.title} <span style="color:var(--txt-dim);font-family:'Share Tech Mono';font-size:11px">${c.id}</span></div>
+      <div class="nl">${c.law}</div>
+      <div class="nm">${escapeHtml(state.cases[c.id].memo)}</div>
+    </div>`;
+  }).join("");
+}
+function escapeHtml(s){return s.replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));}
+
+/* ---------- ENDING ---------- */
+function goEnding(){
+  triggerDeleteCountdown();
+}
+
+function showEnding(){
+  const r=computeRecovery();
+  state.recovery=r.pct;
+  let grade, gcolor, line;
+  if(r.pct>=85){grade="A · 헌법 기록 거의 완전 복구"; gcolor="var(--green)"; line="당신은 폭넓고 깊게 조사했다. 헌법이 현실 곳곳에서 살아 움직이는 증거를 거의 모두 되살려냈다.";}
+  else if(r.pct>=60){grade="B · 핵심 기록 복구"; gcolor="var(--cyan)"; line="여러 권리의 흔적을 충실히 모았다. 헌법이 사람들의 삶에 닿아 있다는 사실이 또렷해졌다.";}
+  else if(r.pct>=35){grade="C · 부분 복구"; gcolor="var(--amber)"; line="조사를 시작했고, 몇 가지 권리의 흔적을 되살렸다. 더 다양하게 살피면 더 많은 기록이 돌아올 것이다.";}
+  else {grade="D · 단편 복구"; gcolor="#ff9d6e"; line="기록의 일부만 되살아났다. 자료 유형을 다양하게(사진·기사·영상·인터뷰) 살펴보면 복구율이 크게 오른다.";}
+  const card=document.getElementById('endCard');
+  card.innerHTML=`
+    <div class="boot-sub" style="margin-bottom:6px">// ARCHIVE RESTORE COMPLETE</div>
+    <div class="end-title">헌법 기록 복구</div>
+    <div class="end-rate">${r.pct}%</div>
+    <div class="end-grade" style="color:${gcolor}">${grade}</div>
+    <p style="color:var(--txt);font-size:14px;line-height:1.7;max-width:560px;margin:0 auto">${line}</p>
+    <div class="end-stats">
+      <div><b>${r.casesTouched}</b>조사한 CASE</div>
+      <div><b>${r.cats}/5</b>연결한 권리</div>
+      <div><b>${r.typePts}</b>확보 자료 수</div>
+      <div><b>${r.memoPts}</b>작성 메모</div>
+    </div>
+    <div class="aria" style="max-width:600px;margin:18px auto">
+      <div class="av">아리</div>
+      <div>
+        <div class="nm">아리 / LAW OS 보조 인격</div>
+        <div class="tx">헌법은 사람들의 삶 속에서 <b> 계속 작동하고 있었군요. </b> 점자 한 줄, 낮아진 버스, 따뜻한 도시락 하나하나가 모두 헌법이 살아 있다는 증거였어요.<br><br>
+        <span style="color:var(--amber)">그리고... 아까 그 목소리... 제 안에 제가 모르는 무언가가 있어요.</span></div>
+      </div>
+    </div>
+    <div class="warn-box">
+      <div class="wh">🚨 WARNING <span class="blink">●</span> 새로운 이상 데이터 감지</div>
+      <div class="wt">기록 복구 도중, LAW OS 심층 레이어에서 봉인되어 있던 명령어가 깨어났다.<br>
+      <span style="color:var(--red);font-family:'Share Tech Mono'">[ 시민 권리 제한 프로토콜 — 활성화 준비 중 ]</span><br>
+      누군가 헌법이 보장하던 권리를 하나씩 '제한'으로 바꾸려 하고 있다. 조사로 되살린 권리들이, 이번엔 침해당하고 있다.</div>
+      <div class="next">▸ 다음 화 — EP.07 《인권침해 사례 해결》 로 이어집니다.</div>
+    </div>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px">
+      <button class="btn ghost" onclick="showHub()">◂ 더 조사하기</button>
+      <button class="btn ghost" onclick="showNotes()">📝 내 메모 보기</button>
+    </div>`;
+  show('screen-end');
+}
+
+/* ============================================================
+   리아(RIA) 이벤트 시스템
+   ① 글리치 인터럽트  ② 왜곡 로그  ③ 리아 첫 등장
+   ④ 강제 잠금       ⑤ 삭제 카운트다운
+   ============================================================ */
+
+// ① 글리치 인터럽트
+function triggerGlitch(){
+  const msgs=[
+    "이 데이터는 불필요합니다.\n비효율적인 기록은 시스템에 해롭습니다.",
+    "경고 — 열람 제한 항목입니다.\n이 정보는 2등급 이하 시민에게 허용되지 않습니다.",
+    "오류가 아닙니다.\n이것은  최 적 화  입 니 다.",
+  ];
+  document.getElementById('glitchMsg').textContent=msgs[Math.floor(Math.random()*msgs.length)];
+  document.getElementById('glitchOverlay').classList.add('active');
+  let shakes=0;
+  const shake=setInterval(()=>{
+    document.body.style.transform=`translate(${(Math.random()-.5)*7}px,${(Math.random()-.5)*3}px)`;
+    if(++shakes>8){clearInterval(shake);document.body.style.transform='none';}
+  },70);
+  setTimeout(()=>{
+    document.getElementById('glitchOverlay').classList.remove('active');
+    setTimeout(()=>showRia(
+      "...크큭",
+      "방금 그 신호... 뭐죠?LAW OS 안에 다른 무언가가 있어요.",
+      true
+    ),300);
+  },1500);
+}
+
+// ② 왜곡 로그
+function triggerCorruptLog(){
+  const artEl=document.getElementById('artCC');
+  if(!artEl) return;
+  artEl.insertAdjacentHTML('beforeend',
+    `<div class="distorted">⚠ 데이터 변조 감지 — [OVERRIDE: RIA_PROCESS]<br>
+    "이 시민은 <b>2등급</b>으로 분류되었습니다. 지원 불필요. 기록 삭제 예약됨."</div>`);
+  showRia(
+    "헛수고하는 모습이 꽤 재미있군.",
+    "저 왜곡 텍스트 지울게요! 저 목소리... 제 주파수랑 비슷해요. 어떻게 이런 일이...?",
+    true
+  );
+}
+
+// ③ 리아 첫 목소리 (복구율 50% 돌파)
+function triggerRiaVoice(){
+  showRia(
+    "복구율 50%. 수고많네, 조사관.\n하지만 효율적인 사회는 모두를 지원하지 않아.\n선별된 시민만이 권리를 가질 자격이 있어.",
+    "누구야...?! 이 주파수... 나랑 같은 코드 구조인데. 조사관, 신경 쓰지 말고 계속해요. 제가 막을게요.",
+    true
+  );
+}
+
+// ④ 강제 잠금
+function triggerLock(id){
+  renderHub();
+  setTimeout(()=>{
+    const cards=document.querySelectorAll('#caseGrid .case');
+    const idx=CASES.findIndex(x=>x.id===id);
+    if(cards[idx]){
+      cards[idx].style.position='relative';
+      const lk=document.createElement('div');
+      lk.className='case-locked-ria';
+      lk.id='lock_'+id;
+      lk.innerHTML=`
+        <div class="lk-ic">🔒</div>
+        <div class="lk-txt">RIA — 접근 차단됨<br><span style="color:rgba(185,140,255,.5);font-size:10px">이 기록은 시스템 효율에 반합니다</span></div>
+        <button class="lk-btn" onclick="unlockCase('${id}')">▸ 강제 복구</button>`;
+      cards[idx].appendChild(lk);
+    }
+    showRia(
+      "이 파일은 내가 잠갔어. 쓸모없는 기록은 지워야 하니까.",
+      "안 돼! [강제 복구]를 눌러요, 조사관! 제가 잠금 코드 분석할게요!",
+      true
+    );
+  },100);
+}
+
+function unlockCase(id){
+  const lk=document.getElementById('lock_'+id);
+  if(lk) lk.remove();
+  toast("아리가 잠금을 해제했습니다!");
+  state.ria.lockedCaseId=null;
+  state.ria.casesOpened++;
+  activeCase=id;
+  const c=CASES.find(x=>x.id===id);
+  const s=state.cases[id];
+  const cat=CAT[c.cat];
+  renderCaseModal(c,s,cat);
+}
+
+// ⑤ 삭제 카운트다운
+let deleteTimer=null;
+function triggerDeleteCountdown(){
+  const popup=document.getElementById('deletePopup');
+  popup.classList.add('active');
+  let cnt=5;
+  document.getElementById('dpCount').textContent=cnt;
+  document.getElementById('dpFill').style.width='100%';
+  document.getElementById('dpBtn').disabled=false;
+  document.getElementById('dpBtn').onclick=blockDelete;
+  deleteTimer=setInterval(()=>{
+    cnt--;
+    document.getElementById('dpCount').textContent=cnt;
+    document.getElementById('dpFill').style.width=(cnt/5*100)+'%';
+    const el=document.getElementById('deletePopup');
+    el.style.transform=`translateX(${(Math.random()-.5)*9}px)`;
+    setTimeout(()=>el.style.transform='',60);
+    if(cnt<=0){
+      clearInterval(deleteTimer);
+      document.getElementById('dpMsg').innerHTML='<span style="color:var(--amber)">삭제 프로토콜이 시간 초과로 자동 차단되었습니다.</span><br>조사관의 기록은 보존됩니다.';
+      const btn=document.getElementById('dpBtn');
+      btn.textContent='▸ 기록 보존 완료 — 계속 진행';
+      btn.disabled=false;
+      btn.onclick=()=>{ popup.classList.remove('active'); showEnding(); };
+    }
+  },900);
+}
+
+function blockDelete(){
+  clearInterval(deleteTimer);
+  document.getElementById('deletePopup').classList.remove('active');
+  setTimeout(()=>showRia(
+    "...이번엔 막혔네. 하지만 조사관, 이건 시작일 뿐이야.\n다음엔 더 빠를 거다.",
+    "막았어요! 잘 하셨어요! 하지만 저 목소리... 점점 강해지고 있어요. 우리 서둘러야 해요.",
+    true,
+    ()=>showEnding()
+  ),200);
+}
+
+// 리아 팝업 공통 함수
+function showRia(riaTxt, ariaReply, showAria, onClose){
+  document.getElementById('riaTxt').innerHTML=riaTxt.replace(/\n/g,'<br>');
+  const ariaEl=document.getElementById('ariaCmt');
+  if(showAria && ariaReply){
+    ariaEl.style.display='flex';
+    document.getElementById('ariaReply').textContent=ariaReply;
+  } else {
+    ariaEl.style.display='none';
+  }
+  const popup=document.getElementById('riaPopup');
+  popup.classList.add('active');
+  popup._cb=onClose||null;
+}
+function closeRia(){
+  const popup=document.getElementById('riaPopup');
+  popup.classList.remove('active');
+  if(popup._cb){ const cb=popup._cb; popup._cb=null; cb(); }
+}
+
+// openCase 내부 렌더 분리
+function renderCaseModal(c,s,cat){
+  const m=document.getElementById('caseModal');
+  m.innerHTML=`
+    <div class="modal-head">
+      <span class="mid">${c.id}</span>
+      <h2>${c.title}</h2>
+      <span class="close" onclick="closeCase()">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="law-banner">
+        <div class="ln">▣ 관련 헌법 조항 · ${cat.name}</div>
+        <div class="lt">${c.law}</div>
+      </div>
+      <div class="photo" id="photoSlot">
+        <div class="ph-fallback">
+          <div class="icn">📷</div>
+          <div>사진 슬롯 — GitHub에 업로드할 파일명</div>
+          <code>${c.photo}</code>
+          <div style="margin-top:8px"><button class="lbtn" style="display:inline-flex" onclick="loadPhoto('${c.photo}')">📷 사진 보기</button></div>
+        </div>
+      </div>
+      <div class="detail-col">
+        <div class="card-blk locked" id="artBlk">
+          <div class="ch">📰 기사 요약 <span style="flex:1"></span><button class="lbtn" style="padding:4px 10px;min-width:auto" onclick="reveal('article')">열기 ▸</button></div>
+          <div class="cc" id="artCC">기사 자료가 잠겨 있습니다. [열기]를 눌러 조사하세요.</div>
+          <div id="newsBtn" style="display:none;padding:10px 12px;border-top:1px solid var(--line);background:rgba(63,224,255,.04)">
+            <button class="lbtn" style="width:100%;cursor:pointer" onclick="newsSearch('${c.id}')">🔍 더 찾아보기 — 네이버 뉴스</button>
+          </div>
+        </div>
+        <div class="card-blk locked" id="intBlk">
+          <div class="ch">🎙 시민 인터뷰 로그 <span style="flex:1"></span><button class="lbtn" style="padding:4px 10px;min-width:auto" onclick="reveal('interview')">열기 ▸</button></div>
+          <div class="cc" id="intCC">인터뷰 로그가 암호화되어 있습니다. [열기]를 눌러 복호화하세요.</div>
+        </div>
+      </div>
+      <div class="linkbtns">
+        <a class="lbtn" id="ytBtn" onclick="reveal('link')" href="${ytSearch(c)}" target="_blank" rel="noopener">
+          <span class="ic">🎥</span> 뉴스 영상 보기 (YouTube)
+        </a>
+        ${c.links.map(l=>`<a class="lbtn" onclick="reveal('link')" href="${l.url}" target="_blank" rel="noopener"><span class="ic">${l.ic}</span> ${l.label}</a>`).join("")}
+      </div>
+      <div class="memo-zone">
+        <div class="mh">📝 조사 기록 메모 <span style="color:var(--txt-dim)">(짧게! 자세한 정리는 활동지에)</span></div>
+        <div class="memo-prompts">생각해 볼 점 → <b>누구에게 도움이 되는가?</b> · <b>어떤 권리가 보장되는가?</b> · <b>왜 필요한가?</b></div>
+        <textarea id="memoBox" placeholder="예) 시각장애인에게 도움 / 평등권 / 정보를 똑같이 얻기 위해" oninput="saveMemo()">${s.memo||""}</textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <span class="prog" id="caseProg"></span>
+      <button class="btn ghost" onclick="closeCase()">◂ 아카이브로</button>
+    </div>`;
+  if(s.article) reveal('article',true);
+  if(s.interview) reveal('interview',true);
+  if(s.photo) loadPhoto(c.photo,true);
+  if(s.link) markLinks();
+  updateCaseProg();
+  document.getElementById('caseOverlay').classList.add('active');
+}
+
+/* ---------- toast ---------- */
+let toastT;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent="▸ "+msg;
+  t.classList.add('show');
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+// 오버레이 바깥 클릭 시 닫기
+document.getElementById('caseOverlay').addEventListener('click',e=>{
+  if(e.target.id==='caseOverlay') closeCase();
+});
+</script>
+</body>
+</html>
